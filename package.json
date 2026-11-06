@@ -1,0 +1,23 @@
+{
+  "name": "playwright-bdd-framework",
+  "private": true,
+  "scripts": {
+    "test": "cucumber-js --config cucumber.cjs",
+    "read-table": "ts-node scripts/read-table.ts",
+    "color-game": "ts-node scripts/colorGame.ts",
+    "locator-practice": "ts-node scripts/LocatorPractice.ts",
+    "dropdown-types": "ts-node scripts/DropdownTypes.ts",
+    "input-texts": "ts-node scripts/InputTexts.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^13.3.0",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^22.19.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "java-playwright-bdd": "file:.."
+  }
+}

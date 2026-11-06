@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d1c">
+  <link rel="icon" href="data:,">
+  <title>Playwright Locators | Locator Practice</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #080d1c;
+      color: #f4f7ff;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --muted: #a8b2cc;
+      --cyan: #61e7f5;
+      --violet: #a48bff;
+      --green: #72f0b2;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 12% 12%, rgba(54, 92, 194, .2), transparent 38%),
+        radial-gradient(ellipse at 88% 85%, rgba(121, 69, 208, .16), transparent 35%),
+        #080d1c;
+    }
+
+    button { font: inherit; }
+    .stage {
+      position: relative;
+      width: min(100vw, 177.78vh);
+      height: min(100vh, 56.25vw);
+      min-height: 480px;
+      padding: 3.3% 5.3% 2.5%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        linear-gradient(rgba(112, 142, 213, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(112, 142, 213, .045) 1px, transparent 1px);
+      background-size: 42px 42px;
+    }
+    .stage::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      width: 38vw;
+      height: 38vw;
+      top: -28vw;
+      right: -13vw;
+      border: 1px solid rgba(97, 231, 245, .12);
+      border-radius: 50%;
+      box-shadow: 0 0 0 42px rgba(97, 231, 245, .025), 0 0 0 84px rgba(97, 231, 245, .018);
+    }
+
+    .topbar, .footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand, .eyebrow, .pill, .footer, .control-button, .scene-number {
+      font-size: clamp(10px, .85vw, 14px);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .brand { color: var(--muted); display: flex; align-items: center; gap: 10px; }
+    .brand-mark { width: 11px; height: 11px; border-radius: 3px; background: var(--cyan); box-shadow: 0 0 18px var(--cyan); transform: rotate(45deg); }
+    .pill { color: var(--cyan); border: 1px solid rgba(97, 231, 245, .35); border-radius: 999px; padding: 9px 13px; }
+
+    .content {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1.06fr .94fr;
+      align-items: center;
+      gap: 6%;
+      min-height: 0;
+      padding: 2.5% 0;
+    }
+    .copy { min-width: 0; }
+    .eyebrow { color: var(--cyan); margin: 0 0 14px; }
+    h1 { margin: 0; font-size: clamp(32px, 4.4vw, 76px); line-height: 1.02; letter-spacing: -.055em; max-width: 740px; }
+    h1 .accent { color: var(--cyan); }
+    .description { color: var(--muted); font-size: clamp(14px, 1.35vw, 20px); line-height: 1.55; max-width: 620px; margin: 20px 0 0; }
+
+    .code-card {
+      position: relative;
+      margin-top: clamp(20px, 3vh, 38px);
+      max-width: 650px;
+      padding: clamp(15px, 1.7vw, 24px);
+      border: 1px solid rgba(160, 180, 233, .19);
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(19, 28, 53, .94), rgba(13, 19, 38, .9));
+      box-shadow: 0 20px 70px rgba(0, 0, 0, .24);
+      transition: border-color .35s, transform .35s, box-shadow .35s;
+    }
+    .code-card.is-active {
+      border-color: rgba(97, 231, 245, .72);
+      box-shadow: 0 0 0 1px rgba(97, 231, 245, .12), 0 18px 60px rgba(33, 179, 205, .12);
+      transform: translateY(-3px);
+    }
+    .code-label { color: #8490ad; font: 600 clamp(9px, .72vw, 11px)/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; }
+    pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #e9eeff; font: 500 clamp(11px, 1.02vw, 15px)/1.8 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .token-method { color: var(--cyan); }
+    .token-string { color: #a7e9bd; }
+    .token-comment { color: #77839f; }
+    .token-value { color: #ffcd83; }
+
+    .visual { position: relative; min-width: 0; height: min(56vh, 480px); min-height: 280px; display: grid; place-items: center; }
+    .browser-window {
+      position: relative;
+      width: min(100%, 510px);
+      border: 1px solid rgba(172, 188, 232, .22);
+      border-radius: 16px;
+      background: rgba(13, 20, 39, .96);
+      overflow: hidden;
+      box-shadow: 0 30px 100px rgba(0, 0, 0, .38), 0 0 60px rgba(80, 130, 245, .08);
+      transform: perspective(1000px) rotateY(-3deg);
+    }
+    .browser-bar { height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 13px; border-bottom: 1px solid rgba(172, 188, 232, .13); color: #7884a0; font: 11px ui-monospace, monospace; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #ff777f; }
+    .dot:nth-child(2) { background: #ffcc70; }
+    .dot:nth-child(3) { background: #70e6ad; }
+    .url { margin-left: 9px; padding: 5px 9px; border-radius: 5px; background: rgba(255, 255, 255, .045); }
+    .demo-page { height: 290px; min-height: 290px; padding: 12px clamp(12px, 1.5vw, 18px); overflow: hidden; }
+    .demo-heading { margin: 0 0 4px; font-size: clamp(13px, 1.5vw, 19px); font-weight: 750; color: #f6f8ff; }
+    .demo-intro { color: #8996b4; font-size: clamp(9px, .79vw, 11px); margin: 0 0 7px; }
+    .demo-button { color: white; border: 0; border-radius: 5px; padding: 5px 9px; background: linear-gradient(100deg, #6751dc, #8b65ef); font-size: clamp(9px, .78vw, 11px); font-weight: 700; }
+    .deal { margin: 6px 0 7px; padding: 5px 8px; border: 1px dashed rgba(255, 200, 87, .4); border-radius: 5px; color: #ffcd83; font-size: clamp(9px, .8vw, 11px); }
+    .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 9px; }
+    .field { min-width: 0; display: flex; flex-direction: column; gap: 3px; color: #bbc5dc; font-size: clamp(8px, .72vw, 10px); }
+    .field input, .field select { min-width: 0; width: 100%; height: 23px; border: 1px solid rgba(161, 181, 232, .2); border-radius: 4px; padding: 3px 6px; background: #111a31; color: #e8edff; font-size: clamp(8px, .72vw, 10px); }
+    .field input::placeholder { color: #7884a0; }
+    .avatar-row { display: flex; align-items: center; gap: 8px; margin-top: 7px; color: #9eabc7; font-size: clamp(8px, .72vw, 10px); }
+    .avatar { width: 21px; height: 21px; display: block; border-radius: 50%; object-fit: cover; }
+    .meta-row { display: flex; gap: 7px; margin-top: 6px; }
+    .meta-chip { border: 1px solid rgba(161, 181, 232, .16); border-radius: 4px; padding: 4px 6px; color: #98a5c2; font-size: clamp(7px, .66vw, 9px); }
+    .legacy-css { color: #c1cbe0; font-size: clamp(8px, .72vw, 10px); margin-top: 5px; }
+
+    .dom-inspector { height: 104px; padding: 8px 12px 9px; border-top: 1px solid rgba(172, 188, 232, .15); background: linear-gradient(110deg, rgba(8, 13, 27, .98), rgba(15, 21, 40, .98)); overflow: hidden; }
+    .dom-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; color: #8490ad; font: 700 clamp(8px, .67vw, 10px)/1.3 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; }
+    .dom-target { color: var(--cyan); letter-spacing: 0; text-transform: none; white-space: nowrap; }
+    .dom-code { margin: 0; padding-left: 8px; border-left: 2px solid var(--cyan); color: #d3dcf1; font: 500 clamp(8px, .73vw, 10px)/1.34 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .dom-tag { color: #a48bff; }
+    .dom-attr { color: #61e7f5; }
+
+    .target-highlight { position: absolute; z-index: 2; border: 2px solid var(--cyan); border-radius: 7px; box-shadow: 0 0 0 999px rgba(5, 9, 22, .3), 0 0 26px rgba(97, 231, 245, .55); opacity: 0; transform: scale(.94); transition: .4s; pointer-events: none; }
+    .target-highlight.visible { opacity: 1; transform: scale(1); animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 999px rgba(5, 9, 22, .3), 0 0 38px rgba(97, 231, 245, .85); } }
+    .tooltip { position: absolute; z-index: 4; top: 0; left: 0; max-width: min(100%, 340px); padding: 7px 10px; border: 1px solid rgba(97, 231, 245, .45); border-radius: 6px; background: #e8fbff; color: #101b31; font: 700 clamp(8px, .75vw, 11px) ui-monospace, monospace; box-shadow: 0 5px 25px rgba(97, 231, 245, .22); opacity: 0; transform: translateY(5px); transition: .35s; overflow-wrap: anywhere; }
+    .tooltip.visible { opacity: 1; transform: translateY(0); }
+
+    .timeline { height: 3px; background: rgba(178, 194, 239, .15); margin: 13px 0 16px; border-radius: 4px; overflow: hidden; }
+    .timeline-progress { height: 100%; width: 0; background: linear-gradient(90deg, var(--cyan), var(--violet)); transition: width .2s linear; }
+    .footer { color: #8692af; letter-spacing: .06em; }
+    .footer-actions { display: flex; align-items: center; gap: 8px; }
+    .control-button { color: #eaf0ff; border: 1px solid rgba(178, 194, 239, .2); background: rgba(255, 255, 255, .04); border-radius: 7px; padding: 8px 11px; cursor: pointer; letter-spacing: .06em; transition: .2s; }
+    .control-button:hover, .control-button:focus-visible { border-color: var(--cyan); color: var(--cyan); outline: none; }
+    .scene-number { color: var(--cyan); }
+
+    @media (max-width: 700px) {
+      body { overflow: auto; }
+      .stage { width: 100%; height: auto; min-height: 100vh; padding: 22px 20px; }
+      .content { grid-template-columns: 1fr; gap: 10px; padding: 25px 0; }
+      .visual { height: 390px; min-height: 330px; }
+      .browser-window { max-width: 470px; }
+      .demo-page { height: auto; min-height: 284px; overflow: visible; }
+      .footer { flex-wrap: wrap; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="Animated lesson about Playwright locator methods">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark"></span> Browser automation / mini lesson</div>
+      <div class="pill">Locator practice</div>
+    </header>
+
+    <section class="content" aria-live="polite">
+      <div class="copy">
+        <p class="eyebrow" id="eyebrow"></p>
+        <h1 id="title"></h1>
+        <p class="description" id="description"></p>
+        <div class="code-card" id="code-card">
+          <div class="code-label" id="code-label"></div>
+          <pre id="code"></pre>
+        </div>
+      </div>
+
+      <div class="visual">
+        <div class="browser-window" id="browser-window">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">practice.expandtesting.com/locators</span></div>
+          <div class="demo-page">
+            <h1 class="demo-heading">Locators Test page for Automation Testing</h1>
+            <p class="demo-intro">Explore reliable ways to find elements on a page.</p>
+            <button class="demo-button" id="add-item" type="button">Add Item</button>
+            <p class="deal">Hot Deal: Buy 1 Get 1 Free</p>
+            <div class="demo-grid">
+              <label class="field">Choose a country
+                <select id="country">
+                  <option value="">Choose…</option><option value="Japan">Japan</option><option value="India">India</option><option value="Canada">Canada</option>
+                </select>
+              </label>
+              <label class="field">Email for newsletter
+                <input id="email" type="email" value="">
+              </label>
+              <label class="field">Search
+                <input id="search" type="search" placeholder="Search the site">
+              </label>
+              <label class="field">Sample input
+                <input type="text" placeholder="Type here">
+              </label>
+            </div>
+            <div class="avatar-row"><img class="avatar" alt="User avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g'%3E%3Cstop stop-color='%2361e7f5'/%3E%3Cstop offset='1' stop-color='%237866e8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='32' fill='url(%23g)'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='sans-serif' font-size='32' font-weight='bold' fill='%23111a31'%3EA%3C/text%3E%3C/svg%3E"><span>Profile image / accessible text</span></div>
+            <div class="meta-row">
+              <span class="meta-chip" title="Refresh content">Refresh content</span>
+              <span class="meta-chip" data-testid="user-name">User: Alice</span>
+            </div>
+            <div class="legacy-css">This is a legacy CSS target</div>
+          </div>
+          <div class="dom-inspector" aria-label="DOM structure for the highlighted element">
+            <div class="dom-heading"><span>DOM structure</span><span class="dom-target">Selected node: <span id="dom-target"></span></span></div>
+            <pre class="dom-code" id="dom-code"></pre>
+          </div>
+          <div class="target-highlight" id="highlight"></div>
+        </div>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+    </section>
+
+    <div class="timeline" aria-hidden="true"><div class="timeline-progress" id="progress"></div></div>
+    <footer class="footer">
+      <span><span class="scene-number" id="scene-number"></span><span id="scene-label"></span></span>
+      <div class="footer-actions">
+        <button class="control-button" id="restart" type="button" title="Restart animation">Replay</button>
+        <button class="control-button" id="toggle" type="button" title="Pause or play animation">Pause</button>
+        <button class="control-button" id="sound" type="button" aria-pressed="false" title="Enable spoken narration and sound effects">Enable sound</button>
+        <button class="control-button" id="fullscreen" type="button" title="Enter fullscreen">Fullscreen</button>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const scenes = [
+      {
+        eyebrow: "01 / Locator practice",
+        title: 'Find elements the <span class="accent">Playwright way.</span>',
+        description: "This page demonstrates the locator methods in LocatorPractice.ts. We’ll match elements by role, visible text, label, placeholder, alt text, title, test ID, and finally a CSS selector.",
+        label: "A locator tour",
+        codeLabel: "Open the example page",
+        code: 'await page.<span class="token-method">goto</span>(\n  <span class="token-string">"practice.expandtesting.com/locators"</span>\n);',
+        target: ".demo-heading",
+        dom: '<main>\n  <h1 class="demo-heading">Locators Test page for Automation Testing</h1>\n</main>',
+        tooltip: "A page full of locator examples",
+        narration: "Welcome! Let’s explore the locator methods in this Playwright example. A locator tells Playwright how to find an element on the page."
+      },
+      {
+        eyebrow: "02 / Role and accessible name",
+        title: 'Start with <span class="accent">what the element is.</span>',
+        description: "getByRole matches a role and accessible name. Name matching is partial by default, so this shorter name matches the longer heading. Use exact: true for a full-name match.",
+        label: "Role → heading",
+        codeLabel: "Find the heading and verify visibility",
+        code: '<span class="token-method">const heading = page.getByRole</span>(<span class="token-string">"heading"</span>, {\n  name: <span class="token-string">"Locators Test page for Automation"</span>\n});\nawait <span class="token-method">expect</span>(heading).<span class="token-method">toBeVisible</span>();',
+        target: ".demo-heading",
+        dom: '<main>\n  <h1 class="demo-heading">Locators Test page for Automation Testing</h1>\n</main>',
+        tooltip: 'getByRole("heading", { name })',
+        narration: "First, get by role. The page heading says Locators Test page for Automation Testing. Our shorter name matches it because Playwright uses partial name matching by default. Add exact true to require the complete accessible name."
+      },
+      {
+        eyebrow: "03 / Role and visible text",
+        title: 'Find a <span class="accent">button by its name.</span>',
+        description: "The same getByRole method locates the Add Item button. For non-control content, getByText finds the visible deal message. Both checks assert visibility instead of relying on page layout or CSS.",
+        label: "Role + text",
+        codeLabel: "Button and visible message",
+        code: '<span class="token-method">page.getByRole</span>(<span class="token-string">"button"</span>, { name: <span class="token-string">"Add Item"</span> });\n<span class="token-method">page.getByText</span>(<span class="token-string">"Hot Deal: Buy 1 Get 1 Free"</span>);',
+        target: "#add-item",
+        dom: '<button id="add-item">Add Item</button>\n<p class="deal">Hot Deal: Buy 1 Get 1 Free</p>',
+        tooltip: 'getByRole("button", { name })',
+        narration: "Next, get by role finds the button named Add Item. getByText is useful for content: here it finds the exact Hot Deal message. The script checks both are visible."
+      },
+      {
+        eyebrow: "04 / Labels and child locators",
+        title: 'Use a <span class="accent">label</span> to find a form control.',
+        description: "getByLabel connects the visible label to the country select. From that control, locator option finds its child options. allTextContents reads their labels so the script can log the available choices.",
+        label: "Label → options",
+        codeLabel: "Read the options inside the select",
+        code: '<span class="token-method">const country = page.getByLabel</span>(\n  <span class="token-string">"Choose a country"</span>\n);\n<span class="token-method">const countryOptions = await country\n  .locator</span>(<span class="token-string">"option"</span>).<span class="token-method">allTextContents</span>();',
+        target: "#country",
+        dom: '<label>\n  Choose a country\n  <select id="country">\n    <option value="Japan">Japan</option>\n  </select>\n</label>',
+        tooltip: 'getByLabel("Choose a country")',
+        narration: "For form fields, use getByLabel. We find the country select by its label, then chain locator option to get its child options. allTextContents returns the option text as an array."
+      },
+      {
+        eyebrow: "05 / Select and assert",
+        title: 'Choose by <span class="accent">label</span>, verify by value.',
+        description: "selectOption accepts an option label, so this remains readable even if the option's underlying value differs. toHaveValue then waits for and verifies the selected value.",
+        label: "selectOption + toHaveValue",
+        codeLabel: "Select Japan and verify the result",
+        code: 'await country.<span class="token-method">selectOption</span>({\n  label: <span class="token-string">"Japan"</span>\n});\nawait <span class="token-method">expect</span>(country)\n  .<span class="token-method">toHaveValue</span>(<span class="token-string">"Japan"</span>);',
+        target: "#country",
+        dom: '<label>\n  Choose a country\n  <select id="country">\n    <option value="Japan">Japan</option>\n  </select>\n</label>',
+        tooltip: 'selectOption({ label: "Japan" })',
+        narration: "Now selectOption chooses Japan using its visible label. toHaveValue verifies that the select really has Japan selected."
+      },
+      {
+        eyebrow: "06 / Label and fill",
+        title: 'Fill inputs through their <span class="accent">labels.</span>',
+        description: "The email field is located by the label users see. fill replaces its contents, and toHaveValue checks the exact text that remains in the input.",
+        label: "Label → fill → value",
+        codeLabel: "Enter and verify the newsletter email",
+        code: '<span class="token-method">const email = page.getByLabel</span>(\n  <span class="token-string">"Email for newsletter"</span>\n);\nawait email.<span class="token-method">fill</span>(<span class="token-string">"tester@example.com"</span>);\nawait <span class="token-method">expect</span>(email)\n  .<span class="token-method">toHaveValue</span>(<span class="token-string">"tester@example.com"</span>);',
+        target: "#email",
+        dom: '<label>\n  Email for newsletter\n  <input type="email" value="">\n</label>',
+        tooltip: 'getByLabel("Email for newsletter")',
+        narration: "The newsletter email is another label-based locator. fill enters the address, and toHaveValue verifies the input contains the expected email."
+      },
+      {
+        eyebrow: "07 / Placeholder text",
+        title: 'Use <span class="accent">getByPlaceholder()</span> for hint text.',
+        description: "getByPlaceholder finds an input from its hint text. Here we fill in Playwright and verify it with toHaveValue. Prefer a label when one is available.",
+        label: "Placeholder → fill",
+        codeLabel: "Locate search by its placeholder",
+        code: '<span class="token-method">const search = page.getByPlaceholder</span>(<span class="token-string">"Search the site"</span>);\nawait search.<span class="token-method">fill</span>(<span class="token-string">"Playwright"</span>);\nawait <span class="token-method">expect</span>(search).<span class="token-method">toHaveValue</span>(<span class="token-string">"Playwright"</span>);',
+        target: "#search",
+        dom: '<label>\n  Search\n  <input type="search" placeholder="Search the site">\n</label>',
+        tooltip: 'getByPlaceholder("Search the site")',
+        narration: "getByPlaceholder locates the search input using its hint, Search the site. Then fill enters Playwright and toHaveValue checks the result."
+      },
+      {
+        eyebrow: "08 / Alt text and title",
+        title: 'Locate images and tooltips by <span class="accent">their text.</span>',
+        description: "getByAltText targets an image by its alternative text, useful for accessible images. getByTitle finds an element by its title attribute. The script asserts that both elements are visible.",
+        label: "Image alt + element title",
+        codeLabel: "Find accessible image and titled content",
+        code: 'page.<span class="token-method">getByAltText</span>(<span class="token-string">"User avatar"</span>);\npage.<span class="token-method">getByTitle</span>(\n  <span class="token-string">"Refresh content"</span>\n);',
+        target: ".avatar",
+        dom: '<img class="avatar" alt="User avatar">\n<span title="Refresh content">Refresh content</span>',
+        tooltip: 'getByAltText("User avatar")',
+        narration: "For an image, getByAltText finds its alternative text, User avatar. getByTitle finds content with the title Refresh content. The script checks both are visible."
+      },
+      {
+        eyebrow: "09 / Test IDs and text assertions",
+        title: 'Use a <span class="accent">test ID</span> when it’s intentional.',
+        description: "getByTestId targets a stable data-testid attribute. toContainText checks for Alice within the user-name element without requiring the whole element text to match exactly.",
+        label: "Test ID → partial text check",
+        codeLabel: "Find the user-name test ID",
+        code: '<span class="token-method">await expect</span>(\n  page.<span class="token-method">getByTestId</span>(<span class="token-string">"user-name"</span>)\n).<span class="token-method">toContainText</span>(<span class="token-string">"Alice"</span>);',
+        target: '[data-testid="user-name"]',
+        dom: '<span data-testid="user-name">\n  User: Alice\n</span>',
+        tooltip: 'getByTestId("user-name")',
+        narration: "getByTestId finds the element marked user-name. toContainText checks that Alice appears somewhere in its text, even if the element includes other words."
+      },
+      {
+        eyebrow: "10 / CSS fallback and exact text",
+        title: 'Use CSS when it fits — then <span class="accent">assert precisely.</span>',
+        description: "locator accepts CSS selectors. Here, .legacy-css targets the element and toHaveText checks its complete text. Prefer user-facing locators when available.",
+        label: "CSS locator → exact text",
+        codeLabel: "Find the legacy target and verify its text",
+        code: '<span class="token-method">await expect</span>(page.<span class="token-method">locator</span>(<span class="token-string">".legacy-css"</span>))\n  .<span class="token-method">toHaveText</span>(<span class="token-string">"This is a legacy CSS target"</span>);',
+        target: ".legacy-css",
+        dom: '<div class="legacy-css">\n  This is a legacy CSS target\n</div>',
+        tooltip: 'locator(".legacy-css")',
+        narration: "Finally, locator accepts a CSS selector. The dot means a class, so legacy-css finds the target. toHaveText checks the full expected text. Prefer role, label, or text locators when they clearly describe the element."
+      },
+      {
+        eyebrow: "11 / The locator toolkit",
+        title: 'Choose a locator. Then <span class="accent">verify.</span>',
+        description: "Pick a locator that clearly identifies the element. Perform the action, then assert the expected value, text, or visibility.",
+        label: "Locate → interact → assert",
+        codeLabel: "The pattern in this program",
+        code: '<span class="token-comment">// Choose a meaningful locator</span>\nawait locator.<span class="token-method">fill</span>(<span class="token-string">"expected input"</span>);\nawait <span class="token-method">expect</span>(locator)\n  .<span class="token-method">toHaveValue</span>(<span class="token-string">"expected input"</span>);',
+        target: ".demo-heading",
+        dom: '<main>\n  <h1 class="demo-heading">Locators Test page for Automation Testing</h1>\n  <label>…</label>\n</main>',
+        tooltip: "Locate → interact → assert",
+        narration: "That’s the locator tour. Choose a locator that clearly identifies the element, interact with it, and assert the expected result. Replay to review any method."
+      }
+    ];
+
+    const $ = (selector) => document.querySelector(selector);
+    let sceneIndex = 0;
+    let sceneStarted = 0;
+    let elapsedBeforePause = 0;
+    let activeSceneDuration = 9000;
+    let paused = false;
+    let soundEnabled = false;
+    let audioContext;
+    let animationFrame = 0;
+
+    function playTone(frequency, duration = .09) {
+      if (!soundEnabled) return;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      audioContext ||= new AudioContextClass();
+      if (audioContext.state === "suspended") audioContext.resume();
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(.0001, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.045, audioContext.currentTime + .015);
+      gain.gain.exponentialRampToValueAtTime(.0001, audioContext.currentTime + duration);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + duration);
+    }
+
+    function narrate(scene) {
+      if (!soundEnabled || !("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(scene.narration);
+      utterance.rate = .94;
+      utterance.pitch = 1;
+      utterance.volume = .9;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function setHighlight(selector) {
+      const highlight = $("#highlight");
+      const browserRect = $("#browser-window").getBoundingClientRect();
+      const visualRect = $(".visual").getBoundingClientRect();
+      const tooltip = $("#tooltip");
+      const element = selector ? $(selector) : null;
+      if (!element) {
+        highlight.classList.remove("visible");
+        return;
+      }
+      const rect = element.getBoundingClientRect();
+      highlight.style.left = `${rect.left - browserRect.left - 5}px`;
+      highlight.style.top = `${rect.top - browserRect.top - 5}px`;
+      highlight.style.width = `${rect.width + 10}px`;
+      highlight.style.height = `${rect.height + 10}px`;
+      tooltip.style.left = `${Math.max(0, Math.min(rect.left - visualRect.left, visualRect.width - tooltip.offsetWidth))}px`;
+      tooltip.style.top = `${rect.top - visualRect.top - tooltip.offsetHeight - 8}px`;
+      highlight.classList.add("visible");
+    }
+
+    function showDemoValue(selector, value) {
+      const element = $(selector);
+      if (element && element.value !== value) {
+        element.value = value;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+
+    function renderScene(index) {
+      const scene = scenes[index];
+      $("#eyebrow").textContent = scene.eyebrow;
+      $("#title").innerHTML = scene.title;
+      $("#description").textContent = scene.description;
+      $("#code-label").textContent = scene.codeLabel;
+      $("#code").innerHTML = scene.code;
+      let domMarkup = scene.dom;
+      if (index >= 4) domMarkup = domMarkup.replace('<option value="Japan">', '<option value="Japan" selected>');
+      if (index >= 5) domMarkup = domMarkup.replace('value=""', 'value="tester@example.com"');
+      if (index >= 6) domMarkup = domMarkup.replace('placeholder="Search the site"', 'placeholder="Search the site" value="Playwright"');
+      $("#dom-code").textContent = domMarkup;
+      const selectedElement = $(scene.target);
+      $("#dom-target").textContent = selectedElement ? `<${selectedElement.tagName.toLowerCase()}>` : "page";
+      $("#scene-number").textContent = `${String(index + 1).padStart(2, "0")} `;
+      $("#scene-label").textContent = `/ ${scene.label}`;
+      $("#tooltip").textContent = scene.tooltip;
+      $("#tooltip").classList.toggle("visible", Boolean(scene.tooltip));
+      $("#code-card").classList.add("is-active");
+      activeSceneDuration = Math.max(9000, scene.narration.trim().split(/\s+/).length * 450 + 2500);
+
+      if (index >= 4) showDemoValue("#country", "Japan");
+      if (index >= 5) showDemoValue("#email", "tester@example.com");
+      if (index >= 6) showDemoValue("#search", "Playwright");
+
+      requestAnimationFrame(() => setHighlight(scene.target));
+      sceneStarted = performance.now();
+      elapsedBeforePause = 0;
+      if (soundEnabled) {
+        playTone(520 + (index % 4) * 90);
+        narrate(scene);
+      }
+    }
+
+    function animate(now) {
+      if (!paused) {
+        const elapsed = elapsedBeforePause + now - sceneStarted;
+        $("#progress").style.width = `${((sceneIndex + Math.min(elapsed / activeSceneDuration, 1)) / scenes.length) * 100}%`;
+        if (elapsed >= activeSceneDuration) {
+          sceneIndex = (sceneIndex + 1) % scenes.length;
+          renderScene(sceneIndex);
+        }
+      }
+      animationFrame = requestAnimationFrame(animate);
+    }
+
+    $("#toggle").addEventListener("click", () => {
+      paused = !paused;
+      $("#toggle").textContent = paused ? "Play" : "Pause";
+      if (paused) {
+        elapsedBeforePause += performance.now() - sceneStarted;
+        if (soundEnabled && "speechSynthesis" in window) window.speechSynthesis.pause();
+      } else {
+        sceneStarted = performance.now();
+        if (soundEnabled && "speechSynthesis" in window) window.speechSynthesis.resume();
+      }
+    });
+
+    $("#restart").addEventListener("click", () => {
+      paused = false;
+      sceneIndex = 0;
+      $("#toggle").textContent = "Pause";
+      $("#progress").style.width = "0%";
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      renderScene(sceneIndex);
+    });
+
+    $("#sound").addEventListener("click", () => {
+      soundEnabled = !soundEnabled;
+      $("#sound").setAttribute("aria-pressed", String(soundEnabled));
+      $("#sound").textContent = soundEnabled ? "Sound on" : "Enable sound";
+      if (soundEnabled) {
+        playTone(660, .14);
+        narrate(scenes[sceneIndex]);
+      } else if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    });
+
+    $("#fullscreen").addEventListener("click", async () => {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+      else await document.exitFullscreen();
+    });
+
+    window.addEventListener("resize", () => setHighlight(scenes[sceneIndex].target));
+    renderScene(sceneIndex);
+    animationFrame = requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

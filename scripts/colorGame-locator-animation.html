@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d1c">
+  <link rel="icon" href="data:,">
+  <title>Playwright Locators | Color Game</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #080d1c;
+      color: #f4f7ff;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --muted: #a8b2cc;
+      --cyan: #61e7f5;
+      --violet: #a48bff;
+      --green: #72f0b2;
+      --panel: rgba(17, 25, 47, .88);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 12% 12%, rgba(54, 92, 194, .2), transparent 38%),
+        radial-gradient(ellipse at 88% 85%, rgba(121, 69, 208, .16), transparent 35%),
+        #080d1c;
+    }
+
+    button { font: inherit; }
+
+    .stage {
+      position: relative;
+      width: min(100vw, 177.78vh);
+      height: min(100vh, 56.25vw);
+      min-height: 480px;
+      padding: 3.3% 5.3% 2.5%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        linear-gradient(rgba(112, 142, 213, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(112, 142, 213, .045) 1px, transparent 1px);
+      background-size: 42px 42px;
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      width: 38vw;
+      height: 38vw;
+      top: -28vw;
+      right: -13vw;
+      border: 1px solid rgba(97, 231, 245, .12);
+      border-radius: 50%;
+      box-shadow: 0 0 0 42px rgba(97, 231, 245, .025), 0 0 0 84px rgba(97, 231, 245, .018);
+    }
+
+    .topbar, .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand, .eyebrow, .pill, .footer, .control-button, .scene-number {
+      font-size: clamp(10px, .85vw, 14px);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .brand { color: var(--muted); display: flex; align-items: center; gap: 10px; }
+    .brand-mark { width: 11px; height: 11px; border-radius: 3px; background: var(--cyan); box-shadow: 0 0 18px var(--cyan); transform: rotate(45deg); }
+    .pill { color: var(--cyan); border: 1px solid rgba(97, 231, 245, .35); border-radius: 999px; padding: 9px 13px; }
+
+    .content {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1.06fr .94fr;
+      align-items: center;
+      gap: 6%;
+      min-height: 0;
+      padding: 2.5% 0;
+    }
+
+    .copy { min-width: 0; }
+    .eyebrow { color: var(--cyan); margin: 0 0 14px; }
+    h1 { margin: 0; font-size: clamp(34px, 5vw, 76px); line-height: 1.02; letter-spacing: -.055em; max-width: 740px; }
+    h1 .accent { color: var(--cyan); }
+    .description { color: var(--muted); font-size: clamp(14px, 1.35vw, 20px); line-height: 1.55; max-width: 620px; margin: 20px 0 0; }
+
+    .code-card {
+      position: relative;
+      margin-top: clamp(20px, 3vh, 38px);
+      max-width: 650px;
+      padding: clamp(15px, 1.7vw, 24px);
+      border: 1px solid rgba(160, 180, 233, .19);
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(19, 28, 53, .94), rgba(13, 19, 38, .9));
+      box-shadow: 0 20px 70px rgba(0, 0, 0, .24);
+      transition: border-color .35s, transform .35s, box-shadow .35s;
+    }
+
+    .code-card.is-active {
+      border-color: rgba(97, 231, 245, .72);
+      box-shadow: 0 0 0 1px rgba(97, 231, 245, .12), 0 18px 60px rgba(33, 179, 205, .12);
+      transform: translateY(-3px);
+    }
+
+    .code-label { color: #8490ad; font: 600 clamp(9px, .72vw, 11px)/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 12px; }
+    pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #e9eeff; font: 500 clamp(11px, 1.02vw, 15px)/1.8 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .token-method { color: var(--cyan); }
+    .token-string { color: #a7e9bd; }
+    .token-comment { color: #77839f; }
+    .token-value { color: #ffcd83; }
+
+    .visual {
+      position: relative;
+      min-width: 0;
+      height: min(56vh, 480px);
+      min-height: 280px;
+      display: grid;
+      place-items: center;
+    }
+
+    .browser-window {
+      position: relative;
+      width: min(100%, 510px);
+      border: 1px solid rgba(172, 188, 232, .22);
+      border-radius: 16px;
+      background: rgba(13, 20, 39, .94);
+      overflow: hidden;
+      box-shadow: 0 30px 100px rgba(0, 0, 0, .38), 0 0 60px rgba(80, 130, 245, .08);
+      transform: perspective(1000px) rotateY(-3deg);
+    }
+
+    .browser-bar { height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 13px; border-bottom: 1px solid rgba(172, 188, 232, .13); color: #7884a0; font: 11px ui-monospace, monospace; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #ff777f; }
+    .dot:nth-child(2) { background: #ffcc70; }
+    .dot:nth-child(3) { background: #70e6ad; }
+    .url { margin-left: 9px; padding: 5px 9px; border-radius: 5px; background: rgba(255, 255, 255, .045); }
+    .webpage { min-height: 285px; padding: clamp(17px, 2.2vw, 28px); }
+    .page-title { color: #f6f8ff; font-size: clamp(14px, 1.6vw, 21px); font-weight: 750; margin: 0 0 7px; }
+    .page-subtitle { color: #8996b4; font-size: clamp(10px, .9vw, 12px); margin: 0 0 22px; }
+    .game-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: center; }
+    .wheel-wrap { position: relative; width: min(25vw, 190px); max-width: 100%; aspect-ratio: 1; margin: auto; }
+    .wheel {
+      width: 100%; height: 100%; border-radius: 50%;
+      background: conic-gradient(#ff6584 0 60deg, #ffc857 60deg 120deg, #75e0a5 120deg 180deg, #55d4e8 180deg 240deg, #8d7aff 240deg 300deg, #f47ad5 300deg 360deg);
+      border: 5px solid #e5eaff; box-shadow: 0 0 28px rgba(97, 231, 245, .13);
+      transition: transform 1.4s cubic-bezier(.16, .84, .28, 1);
+    }
+    .wheel::after { content: ""; position: absolute; width: 17%; aspect-ratio: 1; top: 41.5%; left: 41.5%; border-radius: 50%; background: #f5f7ff; border: 5px solid #18213b; }
+    .pointer { position: absolute; top: -7px; left: calc(50% - 8px); width: 16px; height: 24px; background: #f5f7ff; clip-path: polygon(50% 100%, 0 0, 100% 0); z-index: 2; filter: drop-shadow(0 3px 4px #000); }
+    .game-controls { display: flex; flex-direction: column; gap: 9px; align-items: stretch; }
+    .game-button, .answer-button { border: 1px solid rgba(161, 181, 232, .2); background: rgba(255, 255, 255, .045); color: #e8edff; border-radius: 7px; padding: 9px 12px; font-size: clamp(9px, .83vw, 12px); text-align: center; transition: .35s; }
+    .game-button { background: linear-gradient(100deg, #6751dc, #8b65ef); border: 0; font-weight: 750; }
+    .answer-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 16px; }
+    .answer-button { padding: 7px 5px; font-size: clamp(9px, .76vw, 11px); }
+    .answer-button.selected { background: rgba(114, 240, 178, .2); border-color: var(--green); color: var(--green); box-shadow: 0 0 20px rgba(114, 240, 178, .16); }
+
+    .target-highlight { position: absolute; border: 2px solid var(--cyan); border-radius: 8px; box-shadow: 0 0 0 999px rgba(5, 9, 22, .32), 0 0 26px rgba(97, 231, 245, .55); opacity: 0; transform: scale(.92); transition: .4s; pointer-events: none; }
+    .target-highlight.visible { opacity: 1; transform: scale(1); animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 999px rgba(5, 9, 22, .32), 0 0 38px rgba(97, 231, 245, .85); } }
+
+    .scan-line { position: absolute; left: 0; right: 0; height: 2px; top: 0; opacity: 0; background: linear-gradient(90deg, transparent, var(--cyan), transparent); box-shadow: 0 0 18px var(--cyan); }
+    .scan-line.active { opacity: 1; animation: scan 1.2s ease-in-out; }
+    @keyframes scan { from { top: 15%; } to { top: 85%; } }
+    .tooltip { position: absolute; z-index: 3; display: flex; gap: 7px; align-items: center; padding: 7px 10px; border-radius: 7px; background: #e8fbff; color: #101b31; font: 700 clamp(9px, .76vw, 11px) ui-monospace, monospace; box-shadow: 0 5px 25px rgba(97, 231, 245, .22); opacity: 0; transform: translateY(5px); transition: .35s; white-space: nowrap; }
+    .tooltip.visible { opacity: 1; transform: translateY(0); }
+    .tooltip::before { content: "⌖"; font-size: 15px; color: #308e9c; }
+
+    .toast { position: absolute; left: 50%; bottom: 18px; z-index: 4; padding: 9px 14px; border-radius: 999px; background: rgba(114, 240, 178, .13); border: 1px solid rgba(114, 240, 178, .42); color: var(--green); font-size: clamp(9px, .8vw, 12px); transform: translate(-50%, 10px); opacity: 0; transition: .35s; white-space: nowrap; }
+    .toast.visible { opacity: 1; transform: translate(-50%, 0); }
+
+    .footer { color: #8692af; letter-spacing: .06em; }
+    .timeline { height: 3px; background: rgba(178, 194, 239, .15); margin: 13px 0 16px; border-radius: 4px; overflow: hidden; }
+    .timeline-progress { height: 100%; width: 0; background: linear-gradient(90deg, var(--cyan), var(--violet)); transition: width .2s linear; }
+    .footer-actions { display: flex; align-items: center; gap: 10px; }
+    .control-button { color: #eaf0ff; border: 1px solid rgba(178, 194, 239, .2); background: rgba(255, 255, 255, .04); border-radius: 7px; padding: 8px 12px; cursor: pointer; letter-spacing: .06em; transition: .2s; }
+    .control-button:hover, .control-button:focus-visible { border-color: var(--cyan); color: var(--cyan); outline: none; }
+    .scene-number { color: var(--cyan); }
+
+    @media (max-width: 700px) {
+      body { overflow: auto; }
+      .stage { width: 100%; height: auto; min-height: 100vh; padding: 22px 20px; }
+      .content { grid-template-columns: 1fr; gap: 10px; padding: 25px 0; }
+      .visual { height: 350px; min-height: 300px; }
+      .browser-window { max-width: 470px; }
+      .wheel-wrap { width: 150px; }
+      .footer { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="Animated lesson about Playwright locators">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark"></span> Browser automation / mini lesson</div>
+      <div class="pill">Playwright locators</div>
+    </header>
+
+    <section class="content" aria-live="polite">
+      <div class="copy">
+        <p class="eyebrow" id="eyebrow"></p>
+        <h1 id="title"></h1>
+        <p class="description" id="description"></p>
+        <div class="code-card" id="code-card">
+          <div class="code-label" id="code-label"></div>
+          <pre id="code"></pre>
+        </div>
+      </div>
+
+      <div class="visual">
+        <div class="browser-window" id="browser-window">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">practice.expandtesting.com/color-wheel</span></div>
+          <div class="webpage">
+            <p class="page-title">Color Wheel Challenge</p>
+            <p class="page-subtitle">Spin the wheel and identify the color beneath the pointer.</p>
+            <div class="game-row">
+              <div class="wheel-wrap">
+                <div class="pointer"></div>
+                <div class="wheel" id="wheel"></div>
+              </div>
+              <div class="game-controls">
+                <div class="game-button" id="play-game">Play Game</div>
+                <div class="answer-list" id="answers">
+                  <div class="answer-button">Red</div><div class="answer-button">Yellow</div>
+                  <div class="answer-button">Green</div><div class="answer-button">Blue</div>
+                  <div class="answer-button">Purple</div><div class="answer-button">Pink</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="target-highlight" id="highlight"></div>
+          <div class="scan-line" id="scan-line"></div>
+          <div class="tooltip" id="tooltip"></div>
+          <div class="toast" id="toast">Correct answer — the game accepted the click.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="timeline" aria-hidden="true"><div class="timeline-progress" id="progress"></div></div>
+    <footer class="footer">
+      <span><span class="scene-number" id="scene-number"></span><span id="scene-label"></span></span>
+      <div class="footer-actions">
+        <button class="control-button" id="restart" type="button" title="Restart animation">Replay</button>
+        <button class="control-button" id="toggle" type="button" title="Pause or play animation">Pause</button>
+        <button class="control-button" id="fullscreen" type="button" title="Enter fullscreen">Fullscreen</button>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const scenes = [
+      {
+        eyebrow: "01 / The goal",
+        title: 'Find the <span class="accent">right element.</span>',
+        description: "A locator is a recipe for finding an element on the page. In this example, we’ll follow the color-game script from the first selector to the final verified click.",
+        label: "Start with the page",
+        codeLabel: "Open the page and build a locator",
+        code: '<span class="token-comment">// Navigate to the color game</span>\nawait page.goto(<span class="token-string">"…/color-wheel"</span>);\n\n<span class="token-comment">// CSS selector: # means an element with this id</span>\n<span class="token-method">const wheel = page.locator</span>(<span class="token-string">"#picker"</span>);',
+        target: "none"
+      },
+      {
+        eyebrow: "02 / CSS id locator",
+        title: 'Use <span class="accent">page.locator()</span> for a selector.',
+        description: "The hash marks an ID. Playwright finds the element whose id is “picker” and keeps the locator ready to use. A locator describes the target; it doesn’t click it yet.",
+        label: "CSS selector → wheel",
+        codeLabel: "Locator stored for later",
+        code: '<span class="token-method">const wheel = page.locator</span>(<span class="token-string">"#picker"</span>);\n\n<span class="token-comment">// Read the inline style after the wheel spins</span>\n<span class="token-method">const wheelStyle = await wheel.getAttribute</span>(<span class="token-string">"style"</span>);',
+        target: "wheel",
+        tooltip: 'page.locator("#picker")'
+      },
+      {
+        eyebrow: "03 / Accessible role",
+        title: 'Find controls by <span class="accent">what they are.</span>',
+        description: "getByRole uses the accessible role and name, so the locator reads like the UI: find a button named “Play Game.” This is usually clearer and more resilient than styling-based selectors.",
+        label: "Role + accessible name",
+        codeLabel: "Locate and activate the game button",
+        code: '<span class="token-method">page.getByRole</span>(<span class="token-string">"button"</span>, {\n  name: <span class="token-string">"Play Game"</span>\n}).<span class="token-method">click</span>();',
+        target: "play"
+      },
+      {
+        eyebrow: "04 / Narrow the search",
+        title: 'Chain locators to <span class="accent">scope a search.</span>',
+        description: "First locate the answers container by its ID. Then search only inside it for buttons. Scoping makes the intent clear and avoids matching unrelated buttons elsewhere on the page.",
+        label: "Container → its buttons",
+        codeLabel: "Nested locator",
+        code: '<span class="token-method">const answers = page.locator</span>(<span class="token-string">"#answers"</span>);\n<span class="token-method">const answerButtons = answers.getByRole</span>(<span class="token-string">"button"</span>);',
+        target: "answers"
+      },
+      {
+        eyebrow: "05 / Read many matches",
+        title: 'Collect labels with <span class="accent">allTextContents().</span>',
+        description: "When one locator matches several elements, allTextContents() returns their text as an array. The script uses the number and order of color names to calculate which answer is under the pointer.",
+        label: "Many matches → text array",
+        codeLabel: "Get the visible answer labels",
+        code: '<span class="token-method">const colorNames = await answerButtons\n  .allTextContents</span>();\n\n<span class="token-comment">// Example: ["Red", "Yellow", …]</span>',
+        target: "answers"
+      },
+      {
+        eyebrow: "06 / Match the calculated answer",
+        title: 'Use a <span class="accent">regular expression</span> for a dynamic name.',
+        description: "The color is calculated at runtime, so the script builds a name matcher from selectedColor. The ^ and $ anchors require the whole accessible name to match; i makes the comparison case-insensitive.",
+        label: "Dynamic accessible name",
+        codeLabel: "Find the matching answer button",
+        code: 'await answers.<span class="token-method">getByRole</span>(<span class="token-string">"button"</span>, {\n  name: <span class="token-value">new RegExp</span>(\n    <span class="token-string">`^${selectedColor}$`</span>, <span class="token-string">"i"</span>\n  )\n}).<span class="token-method">click</span>();',
+        target: "selected"
+      },
+      {
+        eyebrow: "07 / Verify the result",
+        title: 'A successful click is <span class="accent">not the whole test.</span>',
+        description: "After choosing the answer, the program checks the result element is empty. Locating the result and asserting its state verifies that the page accepted the answer—not just that the click ran.",
+        label: "Locator + assertion",
+        codeLabel: "Confirm the page state",
+        code: '<span class="token-method">await expect</span>(\n  page.<span class="token-method">locator</span>(<span class="token-string">"#result"</span>)\n).<span class="token-method">toBeEmpty</span>();\n\n<span class="token-comment">// Locate → act → verify</span>',
+        target: "result"
+      }
+    ];
+
+    const $ = (selector) => document.querySelector(selector);
+    const duration = 6200;
+    let sceneIndex = 0;
+    let sceneStarted = 0;
+    let elapsedBeforePause = 0;
+    let paused = false;
+    let rafId = 0;
+    let wheelRotated = false;
+
+    function setHighlight(target) {
+      const highlight = $("#highlight");
+      const windowRect = $("#browser-window").getBoundingClientRect();
+      let element;
+      if (target === "wheel") element = $(".wheel-wrap");
+      if (target === "play") element = $("#play-game");
+      if (target === "answers" || target === "selected") element = $("#answers");
+      if (target === "result") element = $("#answers");
+      if (!element) {
+        highlight.classList.remove("visible");
+        return;
+      }
+      const rect = element.getBoundingClientRect();
+      highlight.style.left = `${rect.left - windowRect.left - 5}px`;
+      highlight.style.top = `${rect.top - windowRect.top - 5}px`;
+      highlight.style.width = `${rect.width + 10}px`;
+      highlight.style.height = `${rect.height + 10}px`;
+      highlight.classList.add("visible");
+    }
+
+    function renderScene(index) {
+      const scene = scenes[index];
+      $("#eyebrow").innerHTML = scene.eyebrow;
+      $("#title").innerHTML = scene.title;
+      $("#description").textContent = scene.description;
+      $("#code-label").textContent = scene.codeLabel;
+      $("#code").innerHTML = scene.code;
+      $("#scene-number").textContent = `${String(index + 1).padStart(2, "0")} `;
+      $("#scene-label").textContent = `/ ${scene.label}`;
+      $("#tooltip").textContent = scene.tooltip || "";
+      $("#tooltip").classList.toggle("visible", Boolean(scene.tooltip));
+      $("#toast").classList.toggle("visible", scene.target === "result");
+      $("#scan-line").classList.toggle("active", scene.target === "wheel");
+      $("#code-card").classList.remove("is-active");
+      if (scene.target === "play" && !wheelRotated) {
+        $("#wheel").style.transform = "rotate(765deg)";
+        wheelRotated = true;
+      }
+      if (scene.target === "selected") {
+        document.querySelector(".answer-button:nth-child(4)").classList.add("selected");
+      }
+      if (scene.target !== "selected" && scene.target !== "result") {
+        document.querySelector(".answer-button:nth-child(4)").classList.remove("selected");
+      }
+      requestAnimationFrame(() => {
+        setHighlight(scene.target);
+        if (scene.target === "wheel") {
+          const tip = $("#tooltip");
+          tip.style.left = "10px";
+          tip.style.top = "50px";
+        } else if (scene.target === "answers" || scene.target === "selected" || scene.target === "result") {
+          const tip = $("#tooltip");
+          tip.style.left = "44%";
+          tip.style.bottom = "18px";
+          tip.style.top = "auto";
+        } else {
+          $("#tooltip").style.left = "10px";
+          $("#tooltip").style.top = "50px";
+          $("#tooltip").style.bottom = "auto";
+        }
+      });
+      sceneStarted = performance.now();
+      elapsedBeforePause = 0;
+    }
+
+    function animate(now) {
+      if (!paused) {
+        const elapsed = elapsedBeforePause + now - sceneStarted;
+        $("#progress").style.width = `${((sceneIndex + Math.min(elapsed / duration, 1)) / scenes.length) * 100}%`;
+        if (elapsed >= duration) {
+          sceneIndex = (sceneIndex + 1) % scenes.length;
+          renderScene(sceneIndex);
+        }
+      }
+      rafId = requestAnimationFrame(animate);
+    }
+
+    $("#toggle").addEventListener("click", () => {
+      paused = !paused;
+      $("#toggle").textContent = paused ? "Play" : "Pause";
+      if (paused) elapsedBeforePause += performance.now() - sceneStarted;
+      else sceneStarted = performance.now();
+    });
+
+    $("#restart").addEventListener("click", () => {
+      paused = false;
+      sceneIndex = 0;
+      wheelRotated = false;
+      $("#toggle").textContent = "Pause";
+      $("#progress").style.width = "0%";
+      $("#wheel").style.transform = "";
+      document.querySelector(".answer-button:nth-child(4)").classList.remove("selected");
+      renderScene(sceneIndex);
+    });
+
+    $("#fullscreen").addEventListener("click", async () => {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+      else await document.exitFullscreen();
+    });
+
+    window.addEventListener("resize", () => setHighlight(scenes[sceneIndex].target));
+    renderScene(sceneIndex);
+    rafId = requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

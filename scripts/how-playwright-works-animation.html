@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d1c">
+  <link rel="icon" href="data:,">
+  <title>How Playwright Works | Browser Automation</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #080d1c;
+      color: #f4f7ff;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --muted: #a8b2cc;
+      --cyan: #61e7f5;
+      --violet: #a48bff;
+      --green: #72f0b2;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 12% 12%, rgba(54, 92, 194, .2), transparent 38%),
+        radial-gradient(ellipse at 88% 85%, rgba(121, 69, 208, .16), transparent 35%),
+        #080d1c;
+    }
+
+    button { font: inherit; }
+    .stage {
+      position: relative;
+      width: min(100vw, 177.78vh);
+      height: min(100vh, 56.25vw);
+      min-height: 480px;
+      padding: 3.3% 5.3% 2.5%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        linear-gradient(rgba(112, 142, 213, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(112, 142, 213, .045) 1px, transparent 1px);
+      background-size: 42px 42px;
+    }
+    .stage::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      width: 38vw;
+      height: 38vw;
+      top: -28vw;
+      right: -13vw;
+      border: 1px solid rgba(97, 231, 245, .12);
+      border-radius: 50%;
+      box-shadow: 0 0 0 42px rgba(97, 231, 245, .025), 0 0 0 84px rgba(97, 231, 245, .018);
+    }
+
+    .topbar, .footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand, .eyebrow, .pill, .footer, .control-button, .scene-number {
+      font-size: clamp(10px, .85vw, 14px);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .brand { color: var(--muted); display: flex; align-items: center; gap: 10px; }
+    .brand-mark { width: 11px; height: 11px; border-radius: 3px; background: var(--cyan); box-shadow: 0 0 18px var(--cyan); transform: rotate(45deg); }
+    .pill { color: var(--cyan); border: 1px solid rgba(97, 231, 245, .35); border-radius: 999px; padding: 9px 13px; }
+
+    .content { flex: 1; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 5%; min-height: 0; padding: 2.5% 0; }
+    .copy { min-width: 0; }
+    .eyebrow { color: var(--cyan); margin: 0 0 14px; }
+    h1 { margin: 0; font-size: clamp(32px, 4.4vw, 76px); line-height: 1.02; letter-spacing: -.055em; max-width: 740px; }
+    h1 .accent { color: var(--cyan); }
+    .description { color: var(--muted); font-size: clamp(14px, 1.25vw, 19px); line-height: 1.5; max-width: 620px; margin: 18px 0 0; }
+
+    .code-card { margin-top: clamp(18px, 2.8vh, 32px); max-width: 690px; padding: clamp(14px, 1.55vw, 22px); border: 1px solid rgba(160, 180, 233, .19); border-radius: 14px; background: linear-gradient(135deg, rgba(19, 28, 53, .94), rgba(13, 19, 38, .9)); box-shadow: 0 20px 70px rgba(0, 0, 0, .24); transition: border-color .35s, transform .35s, box-shadow .35s; }
+    .code-card.is-active { border-color: rgba(97, 231, 245, .72); box-shadow: 0 0 0 1px rgba(97, 231, 245, .12), 0 18px 60px rgba(33, 179, 205, .12); transform: translateY(-3px); }
+    .code-label { color: #8490ad; font: 600 clamp(9px, .72vw, 11px)/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
+    pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #e9eeff; font: 500 clamp(10px, .94vw, 14px)/1.65 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .token-method { color: var(--cyan); }
+    .token-string { color: #a7e9bd; }
+    .token-comment { color: #77839f; }
+    .token-value { color: #ffcd83; }
+
+    .visual { min-width: 0; display: flex; flex-direction: column; gap: 13px; }
+    .flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 7px; }
+    .flow-node { min-width: 0; padding: 10px 6px; text-align: center; border: 1px solid rgba(160, 180, 233, .18); border-radius: 8px; color: #9eabc7; background: rgba(17, 25, 47, .88); font-size: clamp(8px, .76vw, 11px); transition: .3s; }
+    .flow-node strong { display: block; color: #e8edff; font-size: clamp(9px, .86vw, 13px); margin-bottom: 3px; }
+    .flow-node.active { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 22px rgba(97, 231, 245, .15); transform: translateY(-2px); }
+    .flow-node.active strong { color: var(--cyan); }
+    .arrow { color: #697694; font-size: 17px; }
+
+    .browser-window { position: relative; width: 100%; border: 1px solid rgba(172, 188, 232, .22); border-radius: 15px; background: rgba(13, 20, 39, .96); overflow: hidden; box-shadow: 0 30px 100px rgba(0, 0, 0, .38), 0 0 60px rgba(80, 130, 245, .08); }
+    .browser-bar { height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 12px; border-bottom: 1px solid rgba(172, 188, 232, .13); color: #7884a0; font: 10px ui-monospace, monospace; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #ff777f; }
+    .dot:nth-child(2) { background: #ffcc70; }
+    .dot:nth-child(3) { background: #70e6ad; }
+    .url { margin-left: 8px; padding: 5px 8px; border-radius: 5px; background: rgba(255, 255, 255, .045); }
+    .webpage { min-height: 230px; padding: clamp(13px, 1.6vw, 19px); }
+    .page-heading { margin: 0 0 5px; color: #f6f8ff; font-size: clamp(13px, 1.35vw, 19px); font-weight: 750; }
+    .page-copy { color: #8996b4; font-size: clamp(9px, .75vw, 11px); margin: 0 0 11px; }
+    .scroll-frame { position: relative; height: clamp(116px, 17vh, 184px); padding: 8px; border: 1px solid rgba(161, 181, 232, .2); border-radius: 7px; background: rgba(7, 12, 25, .75); overflow: hidden; }
+    .invoice-list { display: flex; flex-direction: column; gap: 5px; transition: transform .8s cubic-bezier(.2, .8, .2, 1); }
+    .invoice-row { height: 24px; flex: 0 0 24px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border: 1px solid rgba(161, 181, 232, .12); border-radius: 4px; color: #b9c5dd; font-size: clamp(8px, .72vw, 10px); }
+    .invoice-row .action { color: var(--cyan); }
+    .invoice-row.target { border-color: var(--green); color: var(--green); box-shadow: 0 0 18px rgba(114, 240, 178, .12); }
+    .scroll-state { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 8px; color: #8793ae; font-size: clamp(8px, .7vw, 10px); }
+    .scroll-state strong { color: var(--green); font-weight: 600; }
+    .dom-inspector { min-height: 66px; padding: 7px 11px 8px; border-top: 1px solid rgba(172, 188, 232, .15); background: linear-gradient(110deg, rgba(8, 13, 27, .98), rgba(15, 21, 40, .98)); }
+    .dom-heading { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; color: #8490ad; font: 700 clamp(7px, .64vw, 9px)/1.3 ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }
+    .dom-target { color: var(--cyan); letter-spacing: 0; text-transform: none; white-space: nowrap; }
+    .dom-code { margin: 0; padding-left: 7px; border-left: 2px solid var(--cyan); color: #d3dcf1; font: 500 clamp(8px, .7vw, 10px)/1.35 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .target-highlight { position: absolute; z-index: 2; border: 2px solid var(--cyan); border-radius: 6px; box-shadow: 0 0 0 999px rgba(5, 9, 22, .22), 0 0 24px rgba(97, 231, 245, .5); opacity: 0; transition: .35s; pointer-events: none; }
+    .target-highlight.visible { opacity: 1; }
+    .server-note { color: #8290ad; font-size: clamp(8px, .72vw, 10px); text-align: center; }
+    .server-note strong { color: var(--violet); font-weight: 600; }
+
+    .timeline { height: 3px; background: rgba(178, 194, 239, .15); margin: 13px 0 16px; border-radius: 4px; overflow: hidden; }
+    .timeline-progress { height: 100%; width: 0; background: linear-gradient(90deg, var(--cyan), var(--violet)); transition: width .2s linear; }
+    .footer { color: #8692af; letter-spacing: .06em; }
+    .footer-actions { display: flex; align-items: center; gap: 8px; }
+    .control-button { color: #eaf0ff; border: 1px solid rgba(178, 194, 239, .2); background: rgba(255, 255, 255, .04); border-radius: 7px; padding: 8px 11px; cursor: pointer; letter-spacing: .06em; transition: .2s; }
+    .control-button:hover, .control-button:focus-visible { border-color: var(--cyan); color: var(--cyan); outline: none; }
+    .scene-number { color: var(--cyan); }
+
+    @media (max-width: 700px) {
+      body { overflow: auto; }
+      .stage { width: 100%; height: auto; min-height: 100vh; padding: 22px 20px; }
+      .content { grid-template-columns: 1fr; gap: 18px; padding: 24px 0; }
+      .visual { gap: 10px; }
+      .webpage { min-height: 215px; }
+      .footer { flex-wrap: wrap; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="Animated explanation of how Playwright controls a browser">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark"></span> Browser automation / mini lesson</div>
+      <div class="pill">How Playwright works</div>
+    </header>
+
+    <section class="content" aria-live="polite">
+      <div class="copy">
+        <p class="eyebrow" id="eyebrow"></p>
+        <h1 id="title"></h1>
+        <p class="description" id="description"></p>
+        <div class="code-card" id="code-card">
+          <div class="code-label" id="code-label"></div>
+          <pre id="code"></pre>
+        </div>
+      </div>
+
+      <div class="visual">
+        <div class="flow" aria-label="Automation flow">
+          <div class="flow-node" id="flow-test"><strong>Test</strong>scenario / code</div>
+          <span class="arrow">→</span>
+          <div class="flow-node" id="flow-playwright"><strong>Playwright</strong>commands</div>
+          <span class="arrow">→</span>
+          <div class="flow-node" id="flow-browser"><strong>Browser</strong>Chromium</div>
+        </div>
+
+        <div class="browser-window" id="browser-window">
+          <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">qaplayground.com/practice/infinite-scroll</span></div>
+          <div class="webpage">
+            <h2 class="page-heading">Infinite Scroll Automation Practice</h2>
+            <p class="page-copy">Find invoices as the list loads more rows.</p>
+            <div class="scroll-frame" id="scroll-frame">
+              <div class="invoice-list" id="invoice-list">
+                <div class="invoice-row"><span>Invoice INV-040</span><span class="action">Action</span></div>
+                <div class="invoice-row"><span>Invoice INV-041</span><span class="action">Action</span></div>
+                <div class="invoice-row target" id="target-invoice"><span>Invoice INV-042</span><span class="action" id="target-action">Action</span></div>
+                <div class="invoice-row"><span>Invoice INV-043</span><span class="action">Action</span></div>
+                <div class="invoice-row"><span>Invoice INV-044</span><span class="action">Action</span></div>
+                <div class="invoice-row"><span>Invoice INV-045</span><span class="action">Action</span></div>
+              </div>
+            </div>
+            <div class="scroll-state"><span>Browser is showing the page</span><strong id="result">Waiting for action</strong></div>
+          </div>
+          <div class="dom-inspector">
+            <div class="dom-heading"><span>Page DOM</span><span class="dom-target">Selected node: <span id="dom-target">document</span></span></div>
+            <pre class="dom-code" id="dom-code"></pre>
+          </div>
+          <div class="target-highlight" id="highlight"></div>
+        </div>
+        <div class="server-note" id="server-note">The web page responds to user-like input. <strong>Server / application may send updated data.</strong></div>
+      </div>
+    </section>
+
+    <div class="timeline" aria-hidden="true"><div class="timeline-progress" id="progress"></div></div>
+    <footer class="footer">
+      <span><span class="scene-number" id="scene-number"></span><span id="scene-label"></span></span>
+      <div class="footer-actions">
+        <button class="control-button" id="restart" type="button" title="Restart animation">Replay</button>
+        <button class="control-button" id="toggle" type="button" title="Pause or play animation">Pause</button>
+        <button class="control-button" id="sound" type="button" aria-pressed="false" title="Enable spoken narration and sound effects">Enable sound</button>
+        <button class="control-button" id="fullscreen" type="button" title="Enter fullscreen">Fullscreen</button>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const scenes = [
+      {
+        eyebrow: "01 / The big idea",
+        title: 'Playwright lets code <span class="accent">drive a real browser.</span>',
+        description: "Your test sends commands through Playwright. Playwright controls a browser, which loads your site and displays its page. Your code can then find elements, interact, and check what happened.",
+        label: "Test → Playwright → browser",
+        codeLabel: "The basic loop",
+        code: '<span class="token-comment">// Test code</span>\nawait page.<span class="token-method">goto</span>(url);\nawait page.<span class="token-method">getByRole</span>(<span class="token-string">"button"</span>).<span class="token-method">click</span>();\nawait <span class="token-method">expect</span>(result).<span class="token-method">toBeVisible</span>();',
+        focus: "test",
+        target: ".page-heading",
+        dom: '<html>\n  <body><h1>…</h1><div>…</div></body>\n</html>',
+        result: "Page is ready",
+        narration: "Playwright lets your code drive a real browser. Your test sends commands, the browser loads and displays a page, and Playwright reports what the page did."
+      },
+      {
+        eyebrow: "02 / Start a browser",
+        title: 'Launch a <span class="accent">browser process.</span>',
+        description: "The test setup launches Chromium. Browser is the running browser process; it can create independent contexts for separate test sessions.",
+        label: "Launch Chromium",
+        codeLabel: "From the framework's Before hook",
+        code: 'this.browser = await <span class="token-method">chromium.launch</span>({\n  headless: process.env.HEADLESS !== <span class="token-string">"false"</span>\n});',
+        focus: "browser",
+        target: ".browser-bar",
+        dom: '<browser name="Chromium">\n  process: running\n</browser>',
+        result: "Chromium launched",
+        narration: "First, the Before hook launches Chromium. Think of Browser as the running browser process. In headless mode it runs without a visible window."
+      },
+      {
+        eyebrow: "03 / Create an isolated session",
+        title: 'A browser context is a <span class="accent">fresh session.</span>',
+        description: "newContext creates an isolated browser session. Pages in separate contexts do not share cookies or local storage by default, which helps tests stay independent.",
+        label: "Browser → context",
+        codeLabel: "Create a context for this test",
+        code: 'this.context = await this.browser\n  .<span class="token-method">newContext</span>();',
+        focus: "browser",
+        target: ".browser-bar",
+        dom: '<browser>\n  <context cookies="isolated">\n  </context>\n</browser>',
+        result: "Fresh session created",
+        narration: "Next, newContext creates a fresh, isolated session. That means test sessions do not normally share cookies or local storage."
+      },
+      {
+        eyebrow: "04 / Open a page",
+        title: 'A Page represents a <span class="accent">browser tab.</span>',
+        description: "context.newPage opens a page inside the context. The framework passes that Page into InfiniteScrollPage, a page object that groups actions for this screen.",
+        label: "Context → Page object",
+        codeLabel: "Create the tab and page object",
+        code: 'this.page = await this.context\n  .<span class="token-method">newPage</span>();\nthis.infiniteScroll = new <span class="token-value">InfiniteScrollPage</span>(\n  this.page\n);',
+        focus: "playwright",
+        target: ".browser-bar",
+        dom: '<context>\n  <page url="about:blank">\n  </page>\n</context>',
+        result: "New tab opened",
+        narration: "A Page represents one browser tab. Here, the framework creates a Page, then gives it to InfiniteScrollPage so page-specific actions use that same tab."
+      },
+      {
+        eyebrow: "05 / Navigate to your app",
+        title: 'Tell the Page where to <span class="accent">go.</span>',
+        description: "page.goto navigates the tab to the target URL. The page object then checks for its heading before the scenario continues.",
+        label: "Navigate → page is ready",
+        codeLabel: "InfiniteScrollPage.open()",
+        code: 'await this.page.<span class="token-method">goto</span>(\n  <span class="token-string">"https://qaplayground.com/practice/infinite-scroll"</span>\n);\nawait <span class="token-method">expect</span>(\n  this.page.getByRole(<span class="token-string">"heading"</span>, { name: <span class="token-string">"Infinite Scroll Automation Practice"</span> })\n).<span class="token-method">toBeVisible</span>();',
+        focus: "browser",
+        target: ".page-heading",
+        dom: '<main>\n  <h1>Infinite Scroll Automation Practice</h1>\n</main>',
+        result: "Heading is visible",
+        narration: "page dot goto navigates this tab to the infinite scroll page. The page object then checks that the page heading becomes visible."
+      },
+      {
+        eyebrow: "06 / Locate elements",
+        title: 'A locator describes <span class="accent">what to find.</span>',
+        description: "A locator is a query for a page element. This code locates a container by test ID, then narrows the search to invoice rows inside it. Creating a locator does not immediately click or change the page.",
+        label: "Page → locator",
+        codeLabel: "Build locators from the page",
+        code: 'const container = this.page\n  .<span class="token-method">getByTestId</span>(<span class="token-string">"scroll-container-dynamic"</span>);\nconst target = this.page\n  .<span class="token-method">locator</span>(<span class="token-string">`[data-invoice-id="INV-042"]`</span>);',
+        focus: "playwright",
+        target: "#target-invoice",
+        dom: '<div data-testid="scroll-container-dynamic">\n  <div data-invoice-id="INV-042">…</div>\n</div>',
+        result: "Locator points to invoice",
+        narration: "Next, the test describes what it wants with locators. One finds the dynamic scroll container by test ID. Another describes the invoice with its invoice ID attribute."
+      },
+      {
+        eyebrow: "07 / Perform an action",
+        title: 'Playwright sends <span class="accent">user-like input.</span>',
+        description: "The page object scrolls the container and clicks the Action button inside the matching invoice. Playwright performs the interaction through the browser, not by directly calling your app’s internal functions.",
+        label: "Locator → browser action",
+        codeLabel: "Scroll, then click within the target",
+        code: 'await this.scrollToBottom(container);\nawait target.getByRole(\n  <span class="token-string">"button"</span>, { name: <span class="token-string">"Action"</span> }\n).<span class="token-method">click</span>();',
+        focus: "playwright",
+        target: "#target-action",
+        dom: '<div data-invoice-id="INV-042">\n  <button>Action</button>\n</div>',
+        result: "Action button clicked",
+        action: "click",
+        narration: "Once the invoice is found, Playwright scrolls its container and clicks the Action button inside that invoice. The browser performs the interaction like a user action."
+      },
+      {
+        eyebrow: "08 / The page responds",
+        title: 'Your app updates the <span class="accent">page and DOM.</span>',
+        description: "The browser runs the web application. After the click, the application can update the visible page or DOM. Playwright observes that result through the browser.",
+        label: "Browser ↔ application",
+        codeLabel: "Application updates the result",
+        code: '<span class="token-comment">// The browser runs application code.</span>\n<span class="token-comment">// The page changes after the click.</span>\n\n<span class="token-value">Clicked Invoice INV-042</span>',
+        focus: "browser",
+        target: "#result",
+        dom: '<div data-testid="result-s02">\n  Clicked Invoice INV-042\n</div>',
+        result: "Application updated",
+        action: "result",
+        narration: "The browser runs the website. The website handles the click and updates its page. Playwright sees the resulting UI and DOM; the test doesn't need to know the app's internal implementation."
+      },
+      {
+        eyebrow: "09 / Verify the outcome",
+        title: 'Assertions check what the user <span class="accent">can observe.</span>',
+        description: "expect checks the result text. Playwright assertions retry while waiting for the expected state, up to their timeout. This is different from sleeping for a fixed duration.",
+        label: "Page result → assertion",
+        codeLabel: "expectInvoiceClicked()",
+        code: 'await <span class="token-method">expect</span>(\n  this.page.getByTestId(<span class="token-string">"result-s02"</span>)\n).<span class="token-method">toHaveText</span>(\n  <span class="token-string">"Clicked Invoice INV-042"</span>\n);',
+        focus: "test",
+        target: "#result",
+        dom: '<div data-testid="result-s02">\n  Clicked Invoice INV-042\n</div>',
+        result: "Assertion passed ✓",
+        action: "result",
+        narration: "Finally, expect checks for the exact result text. Playwright's web-first assertion retries until the text matches or the timeout is reached. It waits for a condition, rather than guessing with a sleep."
+      },
+      {
+        eyebrow: "10 / Clean up",
+        title: 'Close the browser when the <span class="accent">test is done.</span>',
+        description: "The framework's After hook closes the browser. Each scenario can use a clean browser session, and cleanup runs even when the scenario fails.",
+        label: "Finish → close browser",
+        codeLabel: "From the framework's After hook",
+        code: 'After(async function () {\n  await this.browser?.<span class="token-method">close</span>();\n});',
+        focus: "browser",
+        target: ".browser-bar",
+        dom: '<browser name="Chromium">\n  state: closed\n</browser>',
+        result: "Browser closed",
+        action: "closed",
+        narration: "When the scenario ends, the After hook closes the browser. That is the full loop: set up, navigate, locate, act, verify, and clean up."
+      }
+    ];
+
+    const $ = (selector) => document.querySelector(selector);
+    let sceneIndex = 0;
+    let sceneStarted = 0;
+    let elapsedBeforePause = 0;
+    let activeSceneDuration = 9000;
+    let paused = false;
+    let soundEnabled = false;
+    let audioContext;
+
+    function playTone(frequency, duration = .09) {
+      if (!soundEnabled) return;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      audioContext ||= new AudioContextClass();
+      if (audioContext.state === "suspended") audioContext.resume();
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(.0001, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.04, audioContext.currentTime + .015);
+      gain.gain.exponentialRampToValueAtTime(.0001, audioContext.currentTime + duration);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + duration);
+    }
+
+    function narrate(scene) {
+      if (!soundEnabled || !("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(scene.narration);
+      utterance.rate = .93;
+      utterance.pitch = 1;
+      utterance.volume = .9;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function setHighlight(selector) {
+      const highlight = $("#highlight");
+      const browserRect = $("#browser-window").getBoundingClientRect();
+      const element = selector ? $(selector) : null;
+      if (!element) {
+        highlight.classList.remove("visible");
+        return;
+      }
+      const rect = element.getBoundingClientRect();
+      highlight.style.left = `${rect.left - browserRect.left - 4}px`;
+      highlight.style.top = `${rect.top - browserRect.top - 4}px`;
+      highlight.style.width = `${rect.width + 8}px`;
+      highlight.style.height = `${rect.height + 8}px`;
+      highlight.classList.add("visible");
+    }
+
+    function trackHighlight(selector, duration) {
+      const started = performance.now();
+      function update() {
+        setHighlight(selector);
+        if (performance.now() - started < duration) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    }
+
+    function renderScene(index) {
+      const scene = scenes[index];
+      $("#eyebrow").textContent = scene.eyebrow;
+      $("#title").innerHTML = scene.title;
+      $("#description").textContent = scene.description;
+      $("#code-label").textContent = scene.codeLabel;
+      $("#code").innerHTML = scene.code;
+      $("#scene-number").textContent = `${String(index + 1).padStart(2, "0")} `;
+      $("#scene-label").textContent = `/ ${scene.label}`;
+      $("#dom-code").textContent = scene.dom;
+      $("#dom-target").textContent = scene.target ? `<${$(scene.target).tagName.toLowerCase()}>` : "document";
+      $("#result").textContent = scene.result;
+      $("#server-note").style.opacity = scene.focus === "browser" ? "1" : ".65";
+      $("#code-card").classList.add("is-active");
+      for (const node of document.querySelectorAll(".flow-node")) node.classList.remove("active");
+      $(`#flow-${scene.focus}`).classList.add("active");
+
+      const frame = $("#scroll-frame");
+      const list = $("#invoice-list");
+      if (index < 6 || index === 9) list.style.transform = "translateY(0)";
+      if (scene.action === "click" || scene.action === "result" || scene.action === "closed") {
+        list.style.transform = "translateY(-29px)";
+      }
+      $("#target-invoice").classList.toggle("target", index >= 6 && index <= 8);
+      setHighlight(scene.target);
+      if (scene.action === "click") trackHighlight(scene.target, 850);
+
+      activeSceneDuration = Math.max(9000, scene.narration.trim().split(/\s+/).length * 440 + 2600);
+      sceneStarted = performance.now();
+      elapsedBeforePause = 0;
+      if (soundEnabled) {
+        playTone(520 + (index % 4) * 90);
+        narrate(scene);
+      }
+    }
+
+    function animate(now) {
+      if (!paused) {
+        const elapsed = elapsedBeforePause + now - sceneStarted;
+        $("#progress").style.width = `${((sceneIndex + Math.min(elapsed / activeSceneDuration, 1)) / scenes.length) * 100}%`;
+        if (elapsed >= activeSceneDuration) {
+          sceneIndex = (sceneIndex + 1) % scenes.length;
+          renderScene(sceneIndex);
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    $("#toggle").addEventListener("click", () => {
+      paused = !paused;
+      $("#toggle").textContent = paused ? "Play" : "Pause";
+      if (paused) {
+        elapsedBeforePause += performance.now() - sceneStarted;
+        if (soundEnabled && "speechSynthesis" in window) window.speechSynthesis.pause();
+      } else {
+        sceneStarted = performance.now();
+        if (soundEnabled && "speechSynthesis" in window) window.speechSynthesis.resume();
+      }
+    });
+
+    $("#restart").addEventListener("click", () => {
+      paused = false;
+      sceneIndex = 0;
+      $("#toggle").textContent = "Pause";
+      $("#progress").style.width = "0%";
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      renderScene(sceneIndex);
+    });
+
+    $("#sound").addEventListener("click", () => {
+      soundEnabled = !soundEnabled;
+      $("#sound").setAttribute("aria-pressed", String(soundEnabled));
+      $("#sound").textContent = soundEnabled ? "Sound on" : "Enable sound";
+      if (soundEnabled) {
+        playTone(660, .14);
+        narrate(scenes[sceneIndex]);
+      } else if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    });
+
+    $("#fullscreen").addEventListener("click", async () => {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+      else await document.exitFullscreen();
+    });
+
+    window.addEventListener("resize", () => setHighlight(scenes[sceneIndex].target));
+    renderScene(sceneIndex);
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
