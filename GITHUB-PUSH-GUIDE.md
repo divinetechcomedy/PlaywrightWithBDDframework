@@ -108,3 +108,67 @@ git push
 
 Review the second `git status` output before committing so you don't include
 generated files or secrets.
+
+## Working with branches
+
+Check which branch is currently checked out:
+
+```powershell
+git branch --show-current
+```
+
+You can also see the current branch and working-tree state with:
+
+```powershell
+git status
+```
+
+Create a new branch from the latest `origin/main`:
+
+```powershell
+git status
+git fetch origin
+git switch -c feature/my-new-work origin/main
+```
+
+Replace `feature/my-new-work` with your chosen branch name. Check `git status`
+first and commit or save any uncommitted changes before switching branches.
+
+Rename the branch you are currently on:
+
+```powershell
+git branch -m feature/new-name
+```
+
+Push the current branch to GitHub and set its upstream:
+
+```powershell
+git push -u origin HEAD
+```
+
+`HEAD` means the currently checked-out branch. This publishes that branch under
+the same name on GitHub; it does **not** merge it into `main`. For example,
+pushing `feature/my-new-work` creates or updates the GitHub branch with that
+name, while `main` remains a separate branch.
+
+To merge the branch into `main`, open a pull request on GitHub from your
+feature branch to `main`, review it, and merge it there. After a successful
+first push, later updates to that branch can usually be pushed with:
+
+```powershell
+git push
+```
+
+If you renamed a branch that was already pushed, push the new branch first:
+
+```powershell
+git push -u origin feature/new-name
+```
+
+The old branch still exists on GitHub until you explicitly delete it. Only
+after confirming the new branch is published and the old one is no longer
+needed, delete the old remote branch with:
+
+```powershell
+git push origin --delete old-branch-name
+```
